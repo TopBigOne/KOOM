@@ -5,6 +5,7 @@ apply from: rootProject.file('gradle/common.gradle')
 apply from: rootProject.file('gradle/mavenCentral-android-publish.gradle')
 
 android {
+    namespace "com.kwai.koom.nativeoom"
     defaultConfig {
         versionCode 1
         versionName "1.0"
@@ -35,7 +36,7 @@ android {
     externalNativeBuild {
         cmake {
             path 'src/main/jni/CMakeLists.txt'
-            version '3.18.1'
+            version '3.22.1'
         }
     }
 

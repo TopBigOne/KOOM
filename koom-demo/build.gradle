@@ -4,6 +4,7 @@ plugins {
 apply from: rootProject.file('gradle/common.gradle')
 
 android {
+    namespace "com.kwai.koom.demo"
     defaultConfig {
         applicationId "com.kwai.koom.demo"
         versionCode 1
@@ -29,7 +30,7 @@ android {
     externalNativeBuild {
         cmake {
             path 'src/main/jni/CMakeLists.txt'
-            version '3.18.1'
+            version '3.22.1'
         }
     }
 

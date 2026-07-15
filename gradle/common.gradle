@@ -1,9 +1,7 @@
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 
 android {
-    compileSdkVersion rootProject.ext.versions.compileSdkVersion
-    buildToolsVersion rootProject.ext.versions.buildToolsVersion
+    compileSdk rootProject.ext.versions.compileSdkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -15,8 +13,8 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion rootProject.ext.versions.minSdkVersion
-        targetSdkVersion rootProject.ext.versions.targetSdkVersion
+        minSdk rootProject.ext.versions.minSdkVersion
+        targetSdk rootProject.ext.versions.targetSdkVersion
         ndkVersion rootProject.ext.versions.ndk
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
