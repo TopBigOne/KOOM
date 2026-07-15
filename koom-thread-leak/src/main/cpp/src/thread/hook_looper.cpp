@@ -23,8 +23,18 @@
 #include "loop_item.h"
 namespace koom {
 const char *looper_tag = "koom-hook-looper";
+
+/** 构造时创建自己专属的 ThreadHolder，用于保存本次运行期间的所有线程状态。 */
 HookLooper::HookLooper() : looper() { this->holder = new koom::ThreadHolder(); }
+
+/** 析构时释放 ThreadHolder（连同其内部的 threadMap/leakThreadMap）。 */
 HookLooper::~HookLooper() { delete this->holder; }
+
+/**
+ * 后台工作线程上的消息分发中心：把 what 对应的事件路由到 ThreadHolder 具体的状态机方法，
+ * 这是把“hook 回调采集数据”和“更新共享状态/生成报告”解耦之后，两者衔接的关键一环——
+ * 所有这些处理都发生在同一条后台线程，串行执行，因此 ThreadHolder 内部不需要额外加锁。
+ */
 void HookLooper::handle(int what, void *data) {
   looper::handle(what, data);
   switch (what) {
@@ -68,5 +78,6 @@ void HookLooper::handle(int what, void *data) {
     }
   }
 }
+/** 把 hook 回调采集到的事件投递到后台队列；实际入队/唤醒逻辑复用基类 looper::post。 */
 void HookLooper::post(int what, void *data) { looper::post(what, data); }
 }  // namespace koom

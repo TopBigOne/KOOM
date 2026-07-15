@@ -26,6 +26,32 @@
 namespace kwai {
 namespace linker {
 
+/**
+ * Wrappers that let KOOM resolve symbols from libraries which Android's restricted
+ * dynamic linker namespaces would normally hide from a regular dlopen()/dlsym() call
+ * (e.g. non-NDK internal libraries such as libart.so). Two distinct strategies are
+ * offered:
+ *  - dlopen/dlsym/dlclose: still goes through parts of the system linker
+ *    (__loader_dlopen / dl_iterate_phdr) but sidesteps the namespace check itself;
+ *    cheaper, but limited to what that approach can reach on each API level.
+ *  - dlopen_elf/dlsym_elf/dlclose_elf: never touches the system linker at all -
+ *    locates the library's load address via /proc/self/maps and parses its ELF
+ *    sections directly (see ElfReader); more expensive, but works even where the
+ *    lighter-weight approach above is blocked, and can also resolve LOCAL/.symtab
+ *    symbols that .dynsym-only lookups (i.e. real dlsym()) can never return.
+ *
+ * 中文：这里提供的封装函数，能让 KOOM 解析出那些原本会被 Android 受限的动态链接器
+ * 命名空间机制隐藏、无法通过常规 dlopen()/dlsym() 获取的库中的符号（例如非 NDK 的
+ * 内部库 libart.so）。提供了两种不同的策略：
+ *  - dlopen/dlsym/dlclose：仍然会经过系统链接器的部分流程
+ *    （__loader_dlopen / dl_iterate_phdr），但绕开了命名空间检查本身；成本较低，
+ *    但能力上限取决于该方式在各个 API 版本上能够触达的范围。
+ *  - dlopen_elf/dlsym_elf/dlclose_elf：完全不经过系统链接器——通过
+ *    /proc/self/maps 定位库的加载地址，然后直接解析其 ELF section（参见
+ *    ElfReader）；开销更大，但即使上面轻量级的方式被阻挡也依然可用，并且还能
+ *    解析出仅依赖 .dynsym 的查找（即真正的 dlsym()）永远无法返回的
+ *    LOCAL/.symtab 符号。
+ */
 class DlFcn {
  public:
   struct SoDlInfo {

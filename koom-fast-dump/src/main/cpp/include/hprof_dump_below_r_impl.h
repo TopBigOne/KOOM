@@ -34,6 +34,7 @@ namespace leak_monitor {
  */
 class HprofDumpBelowRImpl : public HprofDumpImpl {
  public:
+  // 获取本版本实现的单例。
   static HprofDumpBelowRImpl &GetInstance();
 
  public:
@@ -41,12 +42,16 @@ class HprofDumpBelowRImpl : public HprofDumpImpl {
   ~HprofDumpBelowRImpl() override = default;
 
  public:
+  // dlopen libart.so 并 dlsym 解析 SuspendVM/ResumeVM/DumpHeap 三个符号。
   bool Initialize() override;
 
  public:
+  // 调用 art::Dbg::SuspendVM() 挂起所有 Java 线程。
   bool Suspend() override;
+  // 调用 art::Dbg::ResumeVM() 恢复所有 Java 线程。
   bool Resume() override;
 
+  // 调用 art::hprof::DumpHeap() 写出 hprof 快照文件。
   void DumpHeap(const char* filename) override;
 
  private:

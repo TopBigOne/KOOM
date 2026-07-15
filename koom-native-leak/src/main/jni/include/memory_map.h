@@ -40,6 +40,12 @@
 #define ODEX_SUFFEX ".odex"
 #define DEX_SUFFEX ".dex"
 
+// One parsed row of /proc/self/maps: an address range plus what (if
+// anything) is mapped there, used both to bound raw memory reads safely and
+// to symbolize backtrace PCs into "which .so + what offset".
+// 中文：/proc/self/maps 中解析出的一行：一个地址范围，加上该范围内映射了
+// 什么（如果有的话），既用来安全地限定原始内存读取的边界，也用来把调用栈
+// PC 符号化为“属于哪个 .so 的哪个偏移”。
 struct MapEntry {
   MapEntry(uintptr_t start, uintptr_t end, uintptr_t offset, const char *name,
            size_t name_len, int flags)
@@ -49,8 +55,19 @@ struct MapEntry {
         name(name, name_len),
         flags(flags) {}
 
+  // Constructs a zero-size "probe" entry used only as a search key when
+  // looking up which real MapEntry a given PC falls into (see
+  // MapEntryCompare below).
+  // 中文：构造一个零大小的“探测”条目，仅用作查找某个 PC 落在哪个真实
+  // MapEntry 中时的搜索键（见下面的 MapEntryCompare）。
   explicit MapEntry(uintptr_t pc) : start(pc), end(pc) {}
 
+  // Whether this mapped library is part of the Android runtime itself
+  // (libart.so or compiled .oat/.odex/.dex images) rather than app/native
+  // code, so its frames can be dropped from a reported leak stack trace.
+  // 中文：判断这个已映射的库是否属于 Android 运行时本身（libart.so 或
+  // 编译产物 .oat/.odex/.dex 镜像），而不是 App/native 代码，这样其对应的
+  // 帧就可以从上报的泄漏调用栈中被丢弃。
   bool NeedIgnore() {
     auto ends_with = [](std::string &target,
                         const std::string &suffix) -> bool {
@@ -74,21 +91,50 @@ struct MapEntry {
 };
 
 // Ordering comparator that returns equivalence for overlapping entries
+// Lets a zero-size probe MapEntry(pc) be used as a std::set search key: two
+// entries compare "equal" (neither less than the other) whenever their
+// ranges overlap, so searching for a bare pc finds the real range entry that
+// contains it.
+// 中文：使一个零大小的探测 MapEntry(pc) 可以被用作 std::set 的搜索键：
+// 只要两个条目的地址范围有重叠，就会被比较为“相等”（谁都不小于对方），
+// 因此用一个裸的 pc 去查找时，能够找到真正包含它的那个范围条目。
 struct MapEntryCompare {
   bool operator()(const MapEntry *a, const MapEntry *b) const {
     return a->end <= b->start;
   }
 };
 
+/**
+ * Enumerates this process's own virtual address space by parsing
+ * /proc/self/maps in user space (no special privilege needed), and uses that
+ * to symbolize raw backtrace PCs captured during the "record" stage into
+ * which .so (and offset within it) they belong to.
+ *
+ * 中文：通过在用户态解析 /proc/self/maps（无需任何特殊权限）来枚举本进程
+ * 自身的虚拟地址空间，并据此把“record”阶段捕获到的原始调用栈 PC 符号化，
+ * 判断它们属于哪个 .so（以及在该库内的偏移）。
+ */
 class MemoryMap {
  public:
   MemoryMap() = default;
   ~MemoryMap();
 
+  /** Finds which mapped library `pc` falls in and its offset within it.
+   *
+   * 中文：找出 `pc` 落在哪个已映射的库中，以及它在该库内的偏移量。
+   */
   MapEntry *CalculateRelPc(uintptr_t pc, uintptr_t *rel_pc = nullptr);
+  /** Formats a human-readable "so(+offset) symbol+delta" line for `pc`.
+   *
+   * 中文：为 `pc` 格式化出一行可读文本："so(+偏移) 符号+增量"。
+   */
   std::string FormatSymbol(MapEntry *entry, uintptr_t pc);
 
  private:
+  /** Reads and parses /proc/self/maps into entries_.
+   *
+   * 中文：读取并解析 /proc/self/maps，填充进 entries_。
+   */
   bool ReadMaps();
 
   std::set<MapEntry *, MapEntryCompare> entries_;

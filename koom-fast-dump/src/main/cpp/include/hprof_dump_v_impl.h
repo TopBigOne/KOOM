@@ -41,6 +41,7 @@ class MutexLock;
  */
 class HprofDumpVImpl : public HprofDumpImpl {
  public:
+  // 获取本版本实现的单例。
   static HprofDumpVImpl &GetInstance();
 
  public:
@@ -48,13 +49,22 @@ class HprofDumpVImpl : public HprofDumpImpl {
   ~HprofDumpVImpl() override = default;
 
  public:
+  // dlopen_elf/dlsym_elf 解析 ScopedSuspendAll/ScopedGCCriticalSection/
+  // thread_list_lock_ 加解锁/DumpHeap 等符号（Android 15+ 上普通
+  // dlopen/dlsym 可能受 linker 命名空间限制，需要直接解析 ELF）。
   bool Initialize() override;
 
  public:
+  // 挂起除当前线程外的所有 ART 线程（不释放锁，见 .cpp 中的说明）。
   bool Suspend() override;
+  // 覆写基类 Fork()：在持有 thread_list_lock_ 的情况下调用 fork()，
+  // 这是本版本避免子进程状态不一致/死锁所采用的方式。
   pid_t Fork() override;
+  // 恢复被挂起的线程。
   bool Resume() override;
 
+  // 调用 art::hprof::DumpHeap() 写出 hprof 快照文件；
+  // 注意实现中会先 Resume() 再 dump，见 .cpp 中的说明。
   void DumpHeap(const char* filename) override;
 
  private:

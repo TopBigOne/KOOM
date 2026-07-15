@@ -37,6 +37,7 @@ namespace leak_monitor {
  */
 class HprofDumpBelowVImpl : public HprofDumpImpl {
  public:
+  // 获取本版本实现的单例。
   static HprofDumpBelowVImpl &GetInstance();
 
  public:
@@ -44,12 +45,18 @@ class HprofDumpBelowVImpl : public HprofDumpImpl {
   ~HprofDumpBelowVImpl() override = default;
 
  public:
+  // dlopen libart.so 并 dlsym 解析 ScopedSuspendAll/ScopedGCCriticalSection/
+  // mutator_lock_ 加解锁/DumpHeap 等符号。
   bool Initialize() override;
 
  public:
+  // 挂起除当前线程外的所有 ART 线程，并释放 mutator_lock_，
+  // 避免 fork 之后子进程因锁的持有者线程消失而死锁。
   bool Suspend() override;
+  // 恢复 mutator_lock_ 并恢复被挂起的线程。
   bool Resume() override;
 
+  // 调用 art::hprof::DumpHeap() 写出 hprof 快照文件。
   void DumpHeap(const char* filename) override;
 
  private:

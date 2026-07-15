@@ -25,10 +25,13 @@
 
 namespace koom {
 
+// 对 Android NDK 日志 API（__android_log_print）的轻量封装，供本模块各处打印调试信息，
+// 受 log_enable 开关控制，默认关闭以避免在生产环境产生额外开销和 logcat 噪音。
 class Log {
  public:
   enum Type { Info, Error };
 
+  /** 格式化并输出一条 INFO 级别日志到 logcat（受 log_enable 开关控制）。 */
   static void info(const char *tag, const char *format, ...) {
     if (!log_enable) return;
     char log_buffer[kMaxLogLine];
@@ -39,6 +42,7 @@ class Log {
     log(Info, tag, log_buffer);
   }
 
+  /** 格式化并输出一条 ERROR 级别日志到 logcat（受 log_enable 开关控制）。 */
   static void error(const char *tag, const char *format, ...) {
     if (!log_enable) return;
     char log_buffer[kMaxLogLine];
@@ -52,6 +56,7 @@ class Log {
   static bool log_enable;
 
  private:
+  /** 实际调用 Android NDK 的 __android_log_print 把已格式化好的字符串写入 logcat。 */
   static void log(Type type, const char *tag, char *log_buffer) {
     if (!log_enable) return;
     __android_log_print(type == Info ? ANDROID_LOG_INFO : ANDROID_LOG_ERROR,

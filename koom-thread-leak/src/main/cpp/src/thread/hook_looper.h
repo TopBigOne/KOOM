@@ -27,6 +27,10 @@
 #include "common/looper.h"
 #include "thread_holder.h"
 namespace koom {
+// looper 基类提供了通用的“后台线程 + 消息队列”机制，HookLooper 在此基础上绑定一个 ThreadHolder，
+// 把各个 pthread hook 回调投递过来的事件（ACTION_ADD_THREAD/JOIN/DETACH/EXIT/REFRESH）
+// 分发给 ThreadHolder 的对应状态机方法处理——这样所有共享状态的读写都串行发生在同一条后台线程上，
+// 无需在 hook 回调（可能来自任意业务线程，是热路径）里加锁，也不会阻塞被 hook 的原始 pthread_* 调用。
 class HookLooper : public looper {
  public:
   koom::ThreadHolder *holder;

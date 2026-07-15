@@ -21,8 +21,13 @@
 
 namespace koom {
 
+/** 默认构造函数：所有字段使用类内默认初始值（见 thread_item.h 中的 {} 初始化）。 */
 ThreadItem::ThreadItem() = default;
 
+/**
+ * 拷贝构造函数：用于 ThreadHolder::ExitThread 中把线程状态从 threadMap 拷贝进 leakThreadMap
+ * （map 的 operator[] 赋值需要可拷贝的 value 类型）。逐字段深拷贝，包括调用栈这类字符串成员。
+ */
 ThreadItem::ThreadItem(const ThreadItem &threadItem) {
   this->create_time = threadItem.create_time;
   this->id = threadItem.id;
@@ -36,6 +41,10 @@ ThreadItem::ThreadItem(const ThreadItem &threadItem) {
   this->collect_mode.assign(threadItem.collect_mode);
 }
 
+/**
+ * 重置所有字段为初始值。在 ThreadHolder::AddThread 中，
+ * 对同一个 pthread_t 槽位（可能因为 pthread_t 被系统复用）重新登记新线程前先调用，避免脏数据残留。
+ */
 void ThreadItem::Clear() {
   this->id = 0;
   this->create_time = 0;
